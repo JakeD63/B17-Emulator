@@ -1,3 +1,58 @@
+/************************************************************************
+Program: B17 Emulator
+Author: Jake Davidson
+Class: Computer Organization and Architecture
+Instructor: Dr. Karlsson
+Date: December 5th, 2016
+Description: This program emulates the B17 chip to the specifications in the handout.
+It reads in instructions from an object file and executes them one by one, printing
+a trace line at each execution.
+
+The program begins by reading in the .obj file passed in from the command line that
+contains the instructions and program information. Each line of the obj file starts with the 
+beginning memory address of the instructions on that line (if there are more than one instructions
+on the line, each subsequent instruction will have a value of 1 + the previous address).
+The next number is the number of instructions on that line. Following that is the instructions,
+inputted as 6 digit hex numbers. These numbers, in binary, contain all the information needed for
+the instruction. The bits are numbered from right to left, with bit 0 being the least significant
+and bit 23 being the most significant. Bits 5-0 contain information about the addressing mode, the
+way data is pulled from memory. Bits 11-6 contain the operation code, split into a 2 bit category
+specifier and a 4 bit operation specifier. Bits 23-12 contain the address to use in the operation
+(or if the addressing mode is immediate, the immediate value to use in the operation).
+
+After each line is read in, the instructions are stored in a vector chronologically. This vector 
+contains structs that represent each instruction, containing the instruction address, the addressing 
+mode, the operation code, the operand address, and the EA (which is the final memory address after 
+addressing mode calculations are done). The last line of the object file contains the memory location 
+to start execution. This is stored to the Instruction Register, which stores the current instruction 
+being executed. The Instruction Register is a pointer to the location in the instruction vector 
+that we are currently executing.  
+
+After the instructions vector is loaded in, we print the beginning of the trace line. We do not print 
+the register contents until the instruction is finished executing. Next, the program uses the 
+ExecuteInstruction class to call the function specified by the operation code in the current instruction. 
+The ExecuteInstruction is a container for all the instruction functions, and acts as the ALU for arithmetic 
+instructions. Once the function is finished running, the program prints the end of the trace line, which 
+is the contents of the Accumulator and the three index registers. After this, the Instruction Register is  
+incremented to the next instruction, if we are not at the end of the list. If we are at the end of the list,  
+the program halts the machine and exits. The only time the Instruction Register is not incremented is 
+if the current instruction performs a jump operation. A jump operation sets the next instruction to be 
+different then the one next in line in the vector. If we jump, the ExecuteInstruction function for jumps
+sets the Instruction Register to point to the instruction in the vector located at the memory address 
+specified in the instruction. In this case, we do not increment the Instruction register after execution,
+as the jump function has set if for us. 
+
+This instruction execution loop lasts until either an invalid instruction is executed, or a Halt instruction
+is executed. 
+
+Input: instructions.obj as a command line argument
+Output: trace line of each instruction and the contents of the registers after its execution
+Compilation instructions: run "make" in program directory
+Usage: ./b17 <object file>
+Known bugs/missing features: In the example object files and output on the handout, it appears that program memory is 
+already populated. In this program, all memory starts at 0, so many of the accumulator values do not match. This is not
+technically a bug, since it is just a difference of implementation, but it is important to note nonetheless.
+************************************************************************/
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -10,6 +65,7 @@
 using namespace std;
 
 void readInstructions(string file);
+void execute();
 vector<string> splitString(string s);
 int getIndexRegister(string s);
 unsigned int getOperandAddress(string s);
@@ -18,15 +74,158 @@ opCodes getOpCode(string s);
 string convertToBin(string s);
 string pad(string s);
 
-
+/************************************************************************
+Function: main
+Author: Jake Davidson
+Description: Entry point for the program. Calls the instruction reading 
+routine and contains the execution loop. 
+Parameters: argc - number of cmd line args
+			argv - array of cmd line args
+Returns: 0 - End of program
+************************************************************************/
 int main(int argc, char* argv[]) {
-	ExecuteInstruction ins;
-	readInstructions(argv[1]);
-	bool jump;
-
+	//verify command line arguments
+	if (argc != 2) {
+		cout << "Please only supply the program with the object file as cmd args." << endl;
+		return 0;
+	}
+	//read instructions from object file
+	//this function populates the instructions vector
+	readInstructions(argv[1]); 
 	//done reading in instructions
 	//start executing instructions
+	if(!instructions.empty())
+		execute();
+	else 
+		cout << "No instructions loaded, ensure object file is not empty." << endl;
+	return 0;
+}
 
+/************************************************************************
+Function: readInstructions
+Author: Jake Davidson
+Description: Loops through each line of input object file and decodes
+each instruction. Inserts each instruction into instructions vector.
+Parameters: file - the object file to read from
+************************************************************************/
+void readInstructions(string file) {
+	ifstream fin; //stream to read file from
+	vector<string> instructionList; //list of hex instructions on the current line
+	string currentLine, //current line being read in
+		instructionString; //current instruction being decoded
+	instruction currentInstruction; //instruction to build as we decode instructionString
+	int num; //number of instructions on the current line
+	unsigned int startAddress; //address of the current instruction
+
+	//check that the file was opened successfully
+	fin.open(file);
+	if (!fin) {
+		cout << "Could not open object file, ensure the path is correct." << endl;
+		exit(0);
+	}
+
+	//read in the object file and add instructions to the list
+	while (getline(fin, currentLine)) {
+		instructionList = splitString(currentLine);
+		//if we are not at the last line (last line only contains start address)
+		if (instructionList.size() != 1) {
+			//get the number of instructions on this line
+			num = stoi(instructionList.at(1));
+			//get the start address of the first instruction of the line
+			startAddress = stol(instructionList[0], nullptr, 16);
+			//loop through instructions on the current line adding them to the program
+			for (int i = 0; i < num; i++) {
+				//build current instruction (offset by 2 because of first two items not being instructions)
+				instructionString = instructionList.at(i + 2);
+				//store the hex value of the instruction to print in trace line
+				currentInstruction.instructionHexString = instructionString;
+				//convert the string to binary to extract bits to decode instruction
+				instructionString = convertToBin(instructionString);
+				//pad with 0s on left if too short
+				instructionString = pad(instructionString);
+				//read in current instruction
+				//get instruction address
+				currentInstruction.instructionAddress = startAddress;
+				//get the 2-bit index register number
+				currentInstruction.indexRegister = getIndexRegister(instructionString);
+				//get the addressing mode (bits 5-2)
+				currentInstruction.addressMode = getAddrMode(instructionString);
+				//get the opcode (bits 11-6)
+				currentInstruction.opCode = getOpCode(instructionString);
+				//get the operand address (bits 23-12)
+				currentInstruction.operandAddress = getOperandAddress(instructionString);
+
+				//calculate the EA of the instruction
+				if (currentInstruction.addressMode == Direct) {
+					currentInstruction.EA = currentInstruction.operandAddress;
+				}
+				//technically there is no EA, but I set it to the immediate value to 
+				//not have to have another variable in the struct only used with IMM
+				else if (currentInstruction.addressMode == Immediate) {
+					currentInstruction.EA = currentInstruction.operandAddress;
+				}
+				//for indexed mode, the ea is the memory location at operandAddress + register contents
+				else if (currentInstruction.addressMode == Indexed) {
+					//get the index register to add to the operand address
+					switch (currentInstruction.indexRegister)
+					{
+					case 0:
+						currentInstruction.EA = currentInstruction.operandAddress + X0;
+					case 1:
+						currentInstruction.EA = currentInstruction.operandAddress + X1;
+					case 2:
+						currentInstruction.EA = currentInstruction.operandAddress + X2;
+					case 3:
+						currentInstruction.EA = currentInstruction.operandAddress + X3;
+					default:
+						break;
+					}
+				}
+				//Indirect addressing mode
+				else {
+					//get EA from memory address
+					currentInstruction.EA = memory[currentInstruction.operandAddress];
+				}
+
+				//add to instruction vector
+				instructions.push_back(currentInstruction);
+				//increment the starting address for next loop
+				startAddress = startAddress + 1;
+			}
+		}
+		//we are at the last line, which contains the location to start execution
+		else {
+			if (!instructions.empty()) {
+				startAddress = stol(instructionList[0], nullptr, 16);
+				//look through instructions to find the one with startAddress
+				for (vector<instruction>::iterator it = instructions.begin(); it != instructions.end(); it++) {
+					//when we find the start address in the instructions vector, set our instruction register to its location
+					if (it->instructionAddress == startAddress) {
+						instructionRegister = it;
+						break;
+					}
+					//if there was no instruction location at the end of the file to start at
+					if (it == instructions.end()) {
+						cout << "Machine Halted - no instruction at start address" << endl;
+						exit(0);
+					}
+				}
+
+			}
+			else {
+				//no instructions read in
+				cout << "Machine Halted - No instructions to execute";
+				exit(0);
+			}
+		}
+	}
+}
+
+
+
+void execute() {
+	ExecuteInstruction ins; //container class for instructions and ALU operations
+	bool jump; //bool to keep track of whether or not we have jumped or not
 	//run instructions until we hit halt or 
 	//have an error
 	while (true) {
@@ -104,7 +303,6 @@ int main(int argc, char* argv[]) {
 		case JP:
 			jump = ins.JP(i);
 			break;
-
 		default:
 			ins.printRegisters();
 			cout << "Machine Halted - undefined opcode" << endl;
@@ -125,118 +323,6 @@ int main(int argc, char* argv[]) {
 			//end the program
 			else {
 				cout << "Machine Halted - no more instructions to execute" << endl;
-				exit(0);
-			}
-		}
-	}
-
-
-}
-
-//Read instructions from the 
-//passed in command line argument (argv[1])
-void readInstructions(string file) {
-	ifstream fin;
-	vector<string> instructionList;
-	string currentLine, instructionString;
-	instruction currentInstruction;
-	int num;
-	unsigned int startAddress;
-
-	fin.open(file);
-	if (!fin) {
-		cout << "Could not open object file, ensure the path is correct." << endl;
-		exit(0);
-	}
-
-	//read in the object file and add instructions to the list
-	while (getline(fin, currentLine)) {
-		instructionList = splitString(currentLine);
-		//if we are not at the last line (last line only contains start address)
-		if (instructionList.size() != 1) {
-			//get the number of instructions on this line
-			num = stoi(instructionList.at(1));
-			//get the start address of the first instruction of the line
-			startAddress = stol(instructionList[0], nullptr, 16);
-			//loop through instructions on the current line adding them to the program
-			for (int i = 0; i < num; i++) {
-				//build current instruction (offset by 2 because of first two items not being instructions)
-				instructionString = instructionList.at(i + 2);
-				//store the hex value of the instruction to print in trace line
-				currentInstruction.instructionHexString = instructionString;
-				//convert the string to binary to extract bits to decode instruction
-				instructionString = convertToBin(instructionString);
-				//pad with 0s on left if too short
-				instructionString = pad(instructionString);
-				//read in current instruction
-				//get instruction address
-				currentInstruction.instructionAddress = startAddress;
-				//get the 2-bit index register number
-				currentInstruction.indexRegister = getIndexRegister(instructionString);
-				//get the addressing mode (bits 5-2)
-				currentInstruction.addressMode = getAddrMode(instructionString);
-				//get the opcode (bits 11-6)
-				currentInstruction.opCode = getOpCode(instructionString);
-				//get the operand address (bits 23-12)
-				currentInstruction.operandAddress = getOperandAddress(instructionString);
-
-				//calculate the EA of the instruction
-				if (currentInstruction.addressMode == Direct) {
-					currentInstruction.EA = currentInstruction.operandAddress;
-				}
-				//technically there is no EA, but I set it to the immediate value to 
-				//not have to have another variable in the struct only used with IMM
-				else if (currentInstruction.addressMode == Immediate) {
-					currentInstruction.EA = currentInstruction.operandAddress;
-				}
-				else if (currentInstruction.addressMode == Indexed) {
-					switch (currentInstruction.indexRegister)
-					{
-					case 0:
-						currentInstruction.EA = currentInstruction.operandAddress + X0;
-					case 1:
-						currentInstruction.EA = currentInstruction.operandAddress + X1;
-					case 2:
-						currentInstruction.EA = currentInstruction.operandAddress + X2;
-					case 3:
-						currentInstruction.EA = currentInstruction.operandAddress + X3;
-					default:
-						break;
-					}
-				}
-				//Indirect addressing mode
-				else {
-					//get EA from memory address
-					currentInstruction.EA = memory[currentInstruction.operandAddress];
-				}
-
-				//add to instruction vector
-				instructions.push_back(currentInstruction);
-				//increment the starting address for next loop
-				startAddress = startAddress + 1;
-			}
-		}
-		//we are at the last line, which contains the location to start execution
-		else {
-			if (!instructions.empty()) {
-				startAddress = stol(instructionList[0], nullptr, 16);
-				//look through instructions to find the one with startAddress
-				for (vector<instruction>::iterator it = instructions.begin(); it != instructions.end(); it++) {
-					if (it->instructionAddress == startAddress) {
-						instructionRegister = it;
-						break;
-					}
-
-					if (it == instructions.end()) {
-						cout << "Machine Halted - no instruction at start address" << endl;
-						exit(0);
-					}
-				}
-
-			}
-			else {
-				//no instructions read in
-				cout << "Machine Halted - No instructions to execute";
 				exit(0);
 			}
 		}
