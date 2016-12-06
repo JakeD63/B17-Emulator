@@ -1,3 +1,4 @@
+//Constants declarations. These constants are used throughout the program
 #ifndef CONST_H
 #define CONST_H
 
@@ -5,15 +6,17 @@
 #include <string>
 using namespace std;
 
+//enum of different supported addressing modes
 enum addrModes {
 	Direct,
 	Immediate,
 	Indexed,
 	Indirect,
-	Indexed_Indrect,
+	Indexed_Indrect, //not implemented, as per instructions
 	Illegal
 };
 
+//enum of all implemented op codes
 enum opCodes {
 	HALT,
 	NOP,
@@ -56,15 +59,15 @@ extern string S_EMX, S_CLRX;
 
 //register binary values
 extern string R_0, R_1, R_2, R_3;
-
+//struct for a single instruction
 struct instruction {
-	unsigned int instructionAddress;
-	int indexRegister;
-	addrModes addressMode;
-	opCodes opCode;
-	unsigned int operandAddress;
-	string instructionHexString;
-	int EA;
+	unsigned int instructionAddress; //address of this instruction
+	int indexRegister; //the index register the instruction specifies
+	addrModes addressMode; //the addressing mode of the instruction
+	opCodes opCode; //the op code of the instruction
+	unsigned int operandAddress; //address of the instruction operand
+	string instructionHexString; //hex value of the whole instruction
+	int EA; //final memory value to load from (or immediate value to use)
 };
 //map of bitstrings to addressing modes
 extern map<string, addrModes> addressMap;

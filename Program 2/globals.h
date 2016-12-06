@@ -1,3 +1,4 @@
+//Global variable definitions. These are used throughout the program for global storage
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
