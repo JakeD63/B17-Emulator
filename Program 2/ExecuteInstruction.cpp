@@ -1,13 +1,22 @@
 #include "ExecuteInstruction.h"
 
-//halts machine and ends processing
+/************************************************************************
+Function: halt
+Author: Jake Davidson
+Description: Halts execution
+************************************************************************/
 void ExecuteInstruction::halt() {
 	this->printRegisters();
 	cout << "Machine Halted - HALT instruction executed" << endl;
 	exit(0);
 }
 
-//Load the accumulator from memory
+/************************************************************************
+Function: LD
+Author: Jake Davidson
+Description: Loads AC from memory
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::LD(instruction i) {
 	//if the addressing mode is IMM, take the immediate value
 	if (i.addressMode == Immediate)
@@ -17,6 +26,12 @@ void ExecuteInstruction::LD(instruction i) {
 		AC = memory[i.EA];
 }
 
+/************************************************************************
+Function: ST
+Author: Jake Davidson
+Description: Stores AC to memory
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::ST(instruction i) {
 	//check for legal addressing mode
 	if (i.addressMode == Immediate) {
@@ -29,6 +44,12 @@ void ExecuteInstruction::ST(instruction i) {
 		memory[i.EA] = AC;
 }
 
+/************************************************************************
+Function: EM
+Author: Jake Davidson
+Description: Exchanges AC with memory location
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::EM(instruction i) 
 {
 	int tmp; //used for swap
@@ -46,6 +67,12 @@ void ExecuteInstruction::EM(instruction i)
 	}
 }
 
+/************************************************************************
+Function: LDX
+Author: Jake Davidson
+Description: loads a memory location into an index register
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::LDX(instruction i)
 {
 	int x; //holds value to store to register
@@ -80,6 +107,12 @@ void ExecuteInstruction::LDX(instruction i)
 	}
 }
 
+/************************************************************************
+Function: STX
+Author: Jake Davidson
+Description: stores an index register to memory
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::STX(instruction i)
 {
 	//check for illegal addressing mode
@@ -112,6 +145,12 @@ void ExecuteInstruction::STX(instruction i)
 	}
 }
 
+/************************************************************************
+Function: EMX
+Author: Jake Davidson
+Description: swap memory location with index register
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::EMX(instruction i)
 {
 	int tmp; //temp value used for swap
@@ -150,6 +189,14 @@ void ExecuteInstruction::EMX(instruction i)
 	}
 }
 
+//ALU FUNCTIONS
+
+/************************************************************************
+Function: ADD
+Author: Jake Davidson
+Description: Adds to the AC from memory or immediate value
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::ADD(instruction i)
 {
 	//if IMM addressing mode, add immediate value to AC
@@ -162,6 +209,12 @@ void ExecuteInstruction::ADD(instruction i)
 	}
 }
 
+/************************************************************************
+Function: SUB
+Author: Jake Davidson
+Description: subtracts from the  AC (either from memory or immediate value)
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::SUB(instruction i)
 {
 	//if IMM addressing mode, subtract immediate value from AC
@@ -174,18 +227,36 @@ void ExecuteInstruction::SUB(instruction i)
 	}
 }
 
+/************************************************************************
+Function: CLR
+Author: Jake Davidson
+Description: sets AC to 0
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::CLR()
 {
 	//set value of accumulator to 0
 	AC = 0;
 }
 
+/************************************************************************
+Function: COM
+Author: Jake Davidson
+Description: sets AC to its complement
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::COM()
 {
 	//take complement of the accumulator
 	AC = ~AC;
 }
 
+/************************************************************************
+Function: AND
+Author: Jake Davidson
+Description: ands a value with the AC
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::AND(instruction i)
 {
 	//bitwise AND a memory location and the accumulator
@@ -197,6 +268,12 @@ void ExecuteInstruction::AND(instruction i)
 		AC = AC & memory[i.EA];
 }
 
+/************************************************************************
+Function: OR
+Author: Jake Davidson
+Description: OR a value and the AC
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::OR(instruction i)
 {
 	//bitwise OR a memory location and the accumulator
@@ -208,6 +285,12 @@ void ExecuteInstruction::OR(instruction i)
 		AC = AC | memory[i.EA];
 }
 
+/************************************************************************
+Function: XOR
+Author: Jake Davidson
+Description: XOR a value with AC
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::XOR(instruction i)
 {
 	//bitwise XOR a memory location and the accumulator
@@ -219,6 +302,12 @@ void ExecuteInstruction::XOR(instruction i)
 		AC = AC ^ memory[i.EA];
 }
 
+/************************************************************************
+Function: ADDX
+Author: Jake Davidson
+Description: add value to specified index register
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::ADDX(instruction i)
 {
 	int addVal; //value to add to register
@@ -256,6 +345,12 @@ void ExecuteInstruction::ADDX(instruction i)
 	}
 }
 
+/************************************************************************
+Function: SUBX
+Author: Jake Davidson
+Description: subtract value from specified index register
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::SUBX(instruction i)
 {
 	int subVal; //value to sub from register
@@ -293,6 +388,12 @@ void ExecuteInstruction::SUBX(instruction i)
 	}
 }
 
+/************************************************************************
+Function: CLRX
+Author: Jake Davidson
+Description: 0 out an index register
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::CLRX(instruction i)
 {
 	//switch on index register specified in the instruction
@@ -318,6 +419,12 @@ void ExecuteInstruction::CLRX(instruction i)
 	}
 }
 
+/************************************************************************
+Function: J
+Author: Jake Davidson
+Description: jump execution to specified memory address
+Parameters: i - current instruction
+************************************************************************/
 bool ExecuteInstruction::J(instruction i)
 {
 	//need to set instructionRegister to point to
@@ -346,7 +453,12 @@ bool ExecuteInstruction::J(instruction i)
 	//we should never get here, but we need to return a default value
 	return false;
 }
-
+/************************************************************************
+Function: JZ
+Author: Jake Davidson
+Description: jumps if AC is 0
+Parameters: i - current instruction
+************************************************************************/
 bool ExecuteInstruction::JZ(instruction i)
 {
 	bool jump;
@@ -368,6 +480,12 @@ bool ExecuteInstruction::JZ(instruction i)
 	}
 }
 
+/************************************************************************
+Function: JN
+Author: Jake Davidson
+Description: jumps if AC is negative
+Parameters: i - current instruction
+************************************************************************/
 bool ExecuteInstruction::JN(instruction i)
 {
 	bool jump;
@@ -389,6 +507,12 @@ bool ExecuteInstruction::JN(instruction i)
 	}
 }
 
+/************************************************************************
+Function: JP
+Author: Jake Davidson
+Description: jumps if AC is positive
+Parameters: i - current instruction
+************************************************************************/
 bool ExecuteInstruction::JP(instruction i)
 {
 	bool jump;
@@ -410,7 +534,13 @@ bool ExecuteInstruction::JP(instruction i)
 	}
 }
 
-//print out trace line of an instruction
+/************************************************************************
+Function: printInstruction
+Author: Jake Davidson
+Description: prints out information about the current instruction
+for the trace line.
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::printInstruction(instruction i) {
 	//print address of the instruction
 	cout << hex << setw(3) << setfill('0') << i.instructionAddress << ":  ";
@@ -425,11 +555,14 @@ void ExecuteInstruction::printInstruction(instruction i) {
 		cout << "IMM    ";
 	else if (i.addressMode == HALT)
 		cout << "   ";
-		
-	
 }
 
-//print contents of registers after execution of instruction
+/************************************************************************
+Function: printRegisters
+Author: Jake Davidson
+Description: prints the values of the AC and 4 index registers
+Parameters: i - current instruction
+************************************************************************/
 void ExecuteInstruction::printRegisters() {
 	//print formatted contents of the AC and the 4 X registers
 	cout << "AC[" << hex << setw(6) << setfill('0') << AC << "]   " << "X0[" << hex << setw(3) << setfill('0') << X0 << "]   " 
