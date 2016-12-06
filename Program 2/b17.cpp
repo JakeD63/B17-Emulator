@@ -4,9 +4,12 @@
 #include <vector>
 #include <sstream>
 #include "Instructions.h"
+#include "globals.h"
+#include "const.h"
 
 using namespace std;
 
+void readInstructions(string file);
 vector<string> splitString(string s);
 int getIndexRegister(string s);
 unsigned int getOperandAddress(string s);
@@ -17,6 +20,94 @@ string pad(string s);
 
 
 int main(int argc, char* argv[]) {
+	Instructions ins;
+
+	
+
+	readInstructions(argv[1]);
+	
+	//done reading in instructions
+	//start executing instructions
+
+	//run instructions until we hit halt or 
+	//have an error
+	while (true) {
+		instruction i = *instructionRegister;
+		//print current instructions and all related data
+		ins.printInstruction(i);
+
+		//execute the instruction based on op code
+		switch (instructionRegister->opCode)
+		{
+		case HALT:
+			ins.halt();
+			break;
+		case NOP:
+			//do nothing
+			break;
+		case LD:
+			ins.LD(i);
+			break;
+		case ST:
+			ins.ST(i);
+			break;
+		case EM:
+			ins.EM(i);
+			break;
+		case LDX:
+			ins.LDX(i);
+			break;
+		case STX:
+			ins.STX(i);
+			break;
+		case EMX:
+			ins.EMX(i);
+			break;
+		case ADD:
+			ins.ADD(i);
+			break;
+		case SUB:
+			ins.SUB(i);
+			break;
+		case CLR:
+			ins.CLR();
+			break;
+		case COM:
+			ins.COM();
+			break;
+		case AND:
+			ins.AND(i);
+			break;
+		case OR:
+			ins.OR(i);
+			break;
+		case XOR:
+			ins.XOR(i);
+			break;
+		case ADDX:
+			ins.ADDX(i);
+			break;
+		case SUBX:
+			ins.SUBX(i);
+			break;
+		case CLRX:
+			ins.CLRX(i);
+			break;
+		default:
+			cout << "Machine Halted - undefined opcode" << endl;
+			exit(0);
+			break;
+		}
+		//print contents of registers after instruction is executed
+		ins.printRegisters();
+	}
+
+
+}
+
+//Read instructions from the 
+//passed in command line argument (argv[1])
+void readInstructions(string file) {
 	ifstream fin;
 	vector<string> instructionList;
 	string currentLine, instructionString;
@@ -24,10 +115,10 @@ int main(int argc, char* argv[]) {
 	int num;
 	unsigned int startAddress;
 
-	fin.open(argv[1]);
+	fin.open(file);
 	if (!fin) {
 		cout << "Could not open object file, ensure the path is correct." << endl;
-		return 0;
+		exit(0);
 	}
 
 	//read in the object file and add instructions to the list
@@ -39,11 +130,12 @@ int main(int argc, char* argv[]) {
 			num = stoi(instructionList.at(1));
 			//get the start address of the first instruction of the line
 			startAddress = stol(instructionList[0], nullptr, 16);
-
 			//loop through instructions on the current line adding them to the program
 			for (int i = 0; i < num; i++) {
 				//build current instruction (offset by 2 because of first two items not being instructions)
 				instructionString = instructionList.at(i + 2);
+				//store the hex value of the instruction to print in trace line
+				currentInstruction.instructionHexString = instructionString;
 				//convert the string to binary to extract bits to decode instruction
 				instructionString = convertToBin(instructionString);
 				//pad with 0s on left if too short
@@ -60,6 +152,36 @@ int main(int argc, char* argv[]) {
 				//get the operand address (bits 23-12)
 				currentInstruction.operandAddress = getOperandAddress(instructionString);
 
+				//calculate the EA of the instruction
+				if (currentInstruction.opCode == Direct) {
+					currentInstruction.EA = currentInstruction.operandAddress;
+				}
+				//technically there is no EA, but I set it to the immediate value to 
+				//not have to have another variable in the struct only used with IMM
+				else if (currentInstruction.opCode == Immediate) {
+					currentInstruction.EA = currentInstruction.operandAddress;
+				}
+				else if (currentInstruction.opCode == Indexed) {
+					switch (currentInstruction.indexRegister)
+					{
+					case 0:
+						currentInstruction.EA = currentInstruction.operandAddress + X0;
+					case 1:
+						currentInstruction.EA = currentInstruction.operandAddress + X1;
+					case 2:
+						currentInstruction.EA = currentInstruction.operandAddress + X2;
+					case 3:
+						currentInstruction.EA = currentInstruction.operandAddress + X3;
+					default:
+						break;
+					}
+				}
+				//Indirect addressing mode
+				else {
+					//get EA from memory address
+					currentInstruction.EA = memory[currentInstruction.operandAddress];
+				}
+
 				//add to instruction vector
 				instructions.push_back(currentInstruction);
 				//increment the starting address for next loop
@@ -73,9 +195,10 @@ int main(int argc, char* argv[]) {
 				//look through instructions to find the one with startAddress
 				for (vector<instruction>::iterator it = instructions.begin(); it != instructions.end(); it++) {
 					if (it->instructionAddress == startAddress) {
-						startInstruction = it;
+						instructionRegister = it;
 						break;
 					}
+
 					if (it == instructions.end()) {
 						cout << "Machine Halted - no instruction at start address" << endl;
 						exit(0);
@@ -88,12 +211,9 @@ int main(int argc, char* argv[]) {
 				cout << "Machine Halted - No instructions to execute";
 				exit(0);
 			}
-		}		
+		}
 	}
-	//done reading in instructions
-	return 0;
 }
-
 
 //get the address mode from a binary string (bits 5-2)
 addrModes getAddrMode(string s) {
