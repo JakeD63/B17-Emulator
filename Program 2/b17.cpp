@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include "Instructions.h"
+#include "ExecuteInstruction.h"
 #include "globals.h"
 #include "const.h"
 
@@ -20,18 +20,17 @@ string pad(string s);
 
 
 int main(int argc, char* argv[]) {
-	Instructions ins;
-
-	
-
+	ExecuteInstruction ins;
 	readInstructions(argv[1]);
-	
+	bool jump;
+
 	//done reading in instructions
 	//start executing instructions
 
 	//run instructions until we hit halt or 
 	//have an error
 	while (true) {
+		jump = false;
 		instruction i = *instructionRegister;
 		//print current instructions and all related data
 		ins.printInstruction(i);
@@ -93,6 +92,18 @@ int main(int argc, char* argv[]) {
 		case CLRX:
 			ins.CLRX(i);
 			break;
+		case J:
+			jump = ins.J(i);
+			break;
+		case JZ:
+			jump = ins.JZ(i);
+			break;
+		case JN:
+			jump = ins.JN(i);
+			break;
+		case JP:
+			jump = ins.JP(i);
+			break;
 		default:
 			cout << "Machine Halted - undefined opcode" << endl;
 			exit(0);
@@ -100,6 +111,21 @@ int main(int argc, char* argv[]) {
 		}
 		//print contents of registers after instruction is executed
 		ins.printRegisters();
+
+		//if we do not jump, we need to point instructionRegister to the 
+		//next instruction in the list
+		if (!jump) {
+			//if we are not at the end of the list
+			if (instructionRegister++ != instructions.end()) {
+				instructionRegister++;
+			}
+			//we have executed the last instruction and there was no jump
+			//end the program
+			else {
+				cout << "Machine Halted - no more instructions to execute" << endl;
+				exit(0);
+			}
+		}
 	}
 
 

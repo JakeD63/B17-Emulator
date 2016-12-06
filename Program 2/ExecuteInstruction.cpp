@@ -1,13 +1,14 @@
-#include "Instructions.h"
+#include "ExecuteInstruction.h"
 
 //halts machine and ends processing
-void Instructions::halt() {
+void ExecuteInstruction::halt() {
+	this->printRegisters();
 	cout << "Machine Halted - HALT instruction executed" << endl;
 	exit(0);
 }
 
 //Load the accumulator from memory
-void Instructions::LD(instruction i) {
+void ExecuteInstruction::LD(instruction i) {
 	//if the addressing mode is IMM, take the immediate value
 	if (i.addressMode == Immediate)
 		AC = i.EA;
@@ -16,9 +17,10 @@ void Instructions::LD(instruction i) {
 		AC = memory[i.EA];
 }
 
-void Instructions::ST(instruction i) {
+void ExecuteInstruction::ST(instruction i) {
 	//check for legal addressing mode
 	if (i.addressMode == Immediate) {
+		this->printRegisters();
 		cout << "Machine Halted - illegal addressing mode" << endl;
 		exit(0);
 	}
@@ -27,11 +29,12 @@ void Instructions::ST(instruction i) {
 		memory[i.EA] = AC;
 }
 
-void Instructions::EM(instruction i) 
+void ExecuteInstruction::EM(instruction i) 
 {
 	int tmp; //used for swap
 	//check for illegal addressing mode
 	if (i.addressMode == Immediate) {
+		this->printRegisters();
 		cout << "Machine Halted - illegal addressing mode" << endl;
 		exit(0);
 	}
@@ -43,11 +46,12 @@ void Instructions::EM(instruction i)
 	}
 }
 
-void Instructions::LDX(instruction i)
+void ExecuteInstruction::LDX(instruction i)
 {
 	int x; //holds value to store to register
 	//check for illegal addressing modes
 	if (i.addressMode == Indexed || i.addressMode == Indirect) {
+		this->printRegisters();
 		cout << "Machine Halted - illegal addressing mode" << endl;
 		exit(0);
 	}
@@ -76,10 +80,11 @@ void Instructions::LDX(instruction i)
 	}
 }
 
-void Instructions::STX(instruction i)
+void ExecuteInstruction::STX(instruction i)
 {
 	//check for illegal addressing mode
 	if (i.addressMode != Direct) {
+		this->printRegisters();
 		cout << "Machine Halted - illegal addressing mode" << endl;
 		exit(0);
 	}
@@ -107,11 +112,12 @@ void Instructions::STX(instruction i)
 	}
 }
 
-void Instructions::EMX(instruction i)
+void ExecuteInstruction::EMX(instruction i)
 {
 	int tmp; //temp value used for swap
 	//check for illegal addressing mode
 	if (i.addressMode != Direct) {
+		this->printRegisters();
 		cout << "Machine Halted - illegal addressing mode" << endl;
 		exit(0);
 	}
@@ -144,7 +150,7 @@ void Instructions::EMX(instruction i)
 	}
 }
 
-void Instructions::ADD(instruction i)
+void ExecuteInstruction::ADD(instruction i)
 {
 	//if IMM addressing mode, add immediate value to AC
 	if (i.addressMode == Immediate) {
@@ -156,7 +162,7 @@ void Instructions::ADD(instruction i)
 	}
 }
 
-void Instructions::SUB(instruction i)
+void ExecuteInstruction::SUB(instruction i)
 {
 	//if IMM addressing mode, subtract immediate value from AC
 	if (i.addressMode == Immediate) {
@@ -168,19 +174,19 @@ void Instructions::SUB(instruction i)
 	}
 }
 
-void Instructions::CLR()
+void ExecuteInstruction::CLR()
 {
 	//set value of accumulator to 0
 	AC = 0;
 }
 
-void Instructions::COM()
+void ExecuteInstruction::COM()
 {
 	//take complement of the accumulator
 	AC = ~AC;
 }
 
-void Instructions::AND(instruction i)
+void ExecuteInstruction::AND(instruction i)
 {
 	//bitwise AND a memory location and the accumulator
 	//for IMM address mode, and the immediate value in the instruction
@@ -191,7 +197,7 @@ void Instructions::AND(instruction i)
 		AC = AC & memory[i.EA];
 }
 
-void Instructions::OR(instruction i)
+void ExecuteInstruction::OR(instruction i)
 {
 	//bitwise OR a memory location and the accumulator
 	//for IMM address mode, OR the immediate value in the instruction
@@ -202,7 +208,7 @@ void Instructions::OR(instruction i)
 		AC = AC | memory[i.EA];
 }
 
-void Instructions::XOR(instruction i)
+void ExecuteInstruction::XOR(instruction i)
 {
 	//bitwise XOR a memory location and the accumulator
 	//for IMM address mode, XOR the immediate value in the instruction
@@ -213,11 +219,12 @@ void Instructions::XOR(instruction i)
 		AC = AC ^ memory[i.EA];
 }
 
-void Instructions::ADDX(instruction i)
+void ExecuteInstruction::ADDX(instruction i)
 {
 	int addVal; //value to add to register
 	//check for ilegal addressing modes
 	if (i.addressMode == Indexed || i.addressMode == Indirect) {
+		this->printRegisters();
 		cout << "Machine Halted - illegal addressing mode" << endl;
 		exit(0);
 	}
@@ -249,11 +256,12 @@ void Instructions::ADDX(instruction i)
 	}
 }
 
-void Instructions::SUBX(instruction i)
+void ExecuteInstruction::SUBX(instruction i)
 {
 	int subVal; //value to sub from register
 	//check for ilegal addressing modes
 	if (i.addressMode == Indexed || i.addressMode == Indirect) {
+		this->printRegisters();
 		cout << "Machine Halted - illegal addressing mode" << endl;
 		exit(0);
 	}
@@ -285,31 +293,143 @@ void Instructions::SUBX(instruction i)
 	}
 }
 
-void Instructions::CLRX(instruction i)
+void ExecuteInstruction::CLRX(instruction i)
 {
+	//switch on index register specified in the instruction
+	switch (i.indexRegister)
+	{
+	//0 out the specified register
+	case 0:
+		X0 = 0;
+	case 1:
+		X1 = 0;
+	case 2:
+		X2 = 0;
+	case 3:
+		X3 = 0;
+	default:
+		cout << "Machine Halted - illegal register specifier (somehow)" << endl;
+		exit(0);
+		break;
+	}
+}
 
+bool ExecuteInstruction::J(instruction i)
+{
+	//need to set instructionRegister to point to
+	//the instruction with the address specified in i
+
+	//check that we do not have an illegal addressing mode
+	if (i.addressMode == Immediate) {
+		this->printRegisters();
+		cout << "Machine Halted - illegal addressing mode" << endl;
+		exit(0);
+	}
+	else {
+		for (vector<instruction>::iterator it = instructions.begin(); it != instructions.end(); it++) {
+			//loop through instruction list
+			if (it->instructionAddress == i.instructionAddress) {
+				//if we find the address in our instruction list, set our instruction register to it
+				instructionRegister = it;
+				//tell main loop that we are taking the jump
+				return true;
+			}
+		}
+		//if we end up here, the address was not valid
+		cout << "Machine Halted - invalid jump address" << endl;
+		exit(0);
+	}
+	//we should never get here, but we need to return a default value
+	return false;
+}
+
+bool ExecuteInstruction::JZ(instruction i)
+{
+	bool jump;
+	if (i.addressMode == Immediate) {
+		this->printRegisters();
+		cout << "Machine Halted, invalid address mode" << endl;
+		exit(0);
+	}
+	//jump if the accumulator is a zero
+	if (AC == 0) {
+		//call the jump function, and return what it returns. this will not return false,
+		//since if the address is not found we halt the machine
+		jump = this->J(i);
+		return jump;
+	}
+	else {
+		//if the AC is not 0, then we return false. The check for a valid jump address will not occur
+		return false;
+	}
+}
+
+bool ExecuteInstruction::JN(instruction i)
+{
+	bool jump;
+	if (i.addressMode == Immediate) {
+		this->printRegisters();
+		cout << "Machine Halted, invalid address mode" << endl;
+		exit(0);
+	}
+	//jump if the accumulator is negative
+	if (AC < 0) {
+		//call the jump function, and return what it returns. this will not return false,
+		//since if the address is not found we halt the machine
+		jump = this->J(i);
+		return jump;
+	}
+	else {
+		//if the AC is not negative, then we return false. The check for a valid jump address will not occur
+		return false;
+	}
+}
+
+bool ExecuteInstruction::JP(instruction i)
+{
+	bool jump;
+	if (i.addressMode == Immediate) {
+		this->printRegisters();
+		cout << "Machine Halted, invalid address mode" << endl;
+		exit(0);
+	}
+	//jump if the accumulator is positive
+	if (AC > 0) {
+		//call the jump function, and return what it returns. this will not return false,
+		//since if the address is not found we halt the machine
+		jump = this->J(i);
+		return jump;
+	}
+	else {
+		//if the AC is not positive, then we return false. The check for a valid jump address will not occur
+		return false;
+	}
 }
 
 //print out trace line of an instruction
-void Instructions::printInstruction(instruction i) {
+void ExecuteInstruction::printInstruction(instruction i) {
 	//print address of the instruction
-	cout << i.instructionAddress << ":  ";
+	cout << hex << i.instructionAddress << ":  ";
 	//print instruction itself in hex
 	cout << i.instructionHexString << "   ";
 	//print instruction mnemonic
 	cout << opCodesPrintMap[i.opCode] << "   ";
 	//print EA used by this instruction (or IMM is Immediate addressing mode)
-	if (i.opCode == Immediate)
+	if (i.addressMode == Immediate)
 		cout << "IMM    ";
-	else if (i.opCode == HALT)
+	else if (i.addressMode == HALT)
 		cout << "   ";
 	else {
 		cout << hex << i.EA << "   ";
 	}
 
+
 }
 
 //print contents of registers after execution of instruction
-void Instructions::printRegisters() {
-
+void ExecuteInstruction::printRegisters() {
+	//print formatted contents of the AC and the 4 X registers
+	cout << "AC[" << hex << setw(6) << setfill('0') << AC << "]   " << "X0[" << hex << setw(3) << setfill('0') << X0 << "]   " 
+		<< "X1[" << hex << setw(3) << setfill('0') << X1 << "]   " <<"X2[" << hex << setw(3) << setfill('0') << X2 << "]   " 
+		<< "X3[" << hex << setw(3) << setfill('0') << X3 << "]" << endl;
 }

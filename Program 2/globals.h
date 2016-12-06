@@ -9,7 +9,7 @@ extern vector<instruction> instructions;
 //register definitions
 extern int X0, X1, X2, X3;
 extern int MAR; //memory address register
-extern vector<instruction>::iterator instructionRegister, nextInstruction; //instruction counter, pointer to next instruction in list and current instruction
+extern vector<instruction>::iterator instructionRegister; //instructionRegister, contains pointer to current instruction
 extern int ABUS; //Address bus
 extern int MDR; //Memory data register
 extern int AC; //accumulator

@@ -144,13 +144,13 @@
   <ItemGroup>
     <ClCompile Include="const.cpp" />
     <ClCompile Include="globals.cpp" />
-    <ClCompile Include="Instructions.cpp" />
+    <ClCompile Include="ExecuteInstruction.cpp" />
     <ClCompile Include="b17.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="const.h" />
     <ClInclude Include="globals.h" />
-    <ClInclude Include="Instructions.h" />
+    <ClInclude Include="ExecuteInstruction.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

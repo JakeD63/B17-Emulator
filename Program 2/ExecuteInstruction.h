@@ -3,12 +3,13 @@
 
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include "globals.h"
 #include "const.h"
 
 using namespace std;
 
-class Instructions {
+class ExecuteInstruction {
 public:
 	void halt();
 	void LD(instruction i);
@@ -27,10 +28,10 @@ public:
 	void ADDX(instruction i);
 	void SUBX(instruction i);
 	void CLRX(instruction i);
-	void J(instruction i);
-	void JZ(instruction i);
-	void JN(instruction i);
-	void JP(instruction i);
+	bool J(instruction i);
+	bool JZ(instruction i);
+	bool JN(instruction i);
+	bool JP(instruction i);
 	void printInstruction(instruction i);
 	void printRegisters();
 };
