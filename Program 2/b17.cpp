@@ -104,7 +104,9 @@ int main(int argc, char* argv[]) {
 		case JP:
 			jump = ins.JP(i);
 			break;
+
 		default:
+			ins.printRegisters();
 			cout << "Machine Halted - undefined opcode" << endl;
 			exit(0);
 			break;
@@ -116,7 +118,7 @@ int main(int argc, char* argv[]) {
 		//next instruction in the list
 		if (!jump) {
 			//if we are not at the end of the list
-			if (instructionRegister++ != instructions.end()) {
+			if (instructionRegister + 1 != instructions.end()) {
 				instructionRegister++;
 			}
 			//we have executed the last instruction and there was no jump
@@ -179,15 +181,15 @@ void readInstructions(string file) {
 				currentInstruction.operandAddress = getOperandAddress(instructionString);
 
 				//calculate the EA of the instruction
-				if (currentInstruction.opCode == Direct) {
+				if (currentInstruction.addressMode == Direct) {
 					currentInstruction.EA = currentInstruction.operandAddress;
 				}
 				//technically there is no EA, but I set it to the immediate value to 
 				//not have to have another variable in the struct only used with IMM
-				else if (currentInstruction.opCode == Immediate) {
+				else if (currentInstruction.addressMode == Immediate) {
 					currentInstruction.EA = currentInstruction.operandAddress;
 				}
-				else if (currentInstruction.opCode == Indexed) {
+				else if (currentInstruction.addressMode == Indexed) {
 					switch (currentInstruction.indexRegister)
 					{
 					case 0:

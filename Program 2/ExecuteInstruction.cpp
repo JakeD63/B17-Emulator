@@ -301,12 +301,16 @@ void ExecuteInstruction::CLRX(instruction i)
 	//0 out the specified register
 	case 0:
 		X0 = 0;
+		break;
 	case 1:
 		X1 = 0;
+		break;
 	case 2:
 		X2 = 0;
+		break;
 	case 3:
 		X3 = 0;
+		break;
 	default:
 		cout << "Machine Halted - illegal register specifier (somehow)" << endl;
 		exit(0);
@@ -328,7 +332,7 @@ bool ExecuteInstruction::J(instruction i)
 	else {
 		for (vector<instruction>::iterator it = instructions.begin(); it != instructions.end(); it++) {
 			//loop through instruction list
-			if (it->instructionAddress == i.instructionAddress) {
+			if (it->instructionAddress == i.EA) {
 				//if we find the address in our instruction list, set our instruction register to it
 				instructionRegister = it;
 				//tell main loop that we are taking the jump
@@ -409,21 +413,20 @@ bool ExecuteInstruction::JP(instruction i)
 //print out trace line of an instruction
 void ExecuteInstruction::printInstruction(instruction i) {
 	//print address of the instruction
-	cout << hex << i.instructionAddress << ":  ";
+	cout << hex << setw(3) << setfill('0') << i.instructionAddress << ":  ";
 	//print instruction itself in hex
 	cout << i.instructionHexString << "   ";
 	//print instruction mnemonic
 	cout << opCodesPrintMap[i.opCode] << "   ";
 	//print EA used by this instruction (or IMM is Immediate addressing mode)
-	if (i.addressMode == Immediate)
+	if (i.addressMode == Direct)
+		cout << hex << setw(3) << setfill('0') << i.EA << "    ";
+	else if (i.addressMode == Immediate)
 		cout << "IMM    ";
 	else if (i.addressMode == HALT)
 		cout << "   ";
-	else {
-		cout << hex << i.EA << "   ";
-	}
-
-
+		
+	
 }
 
 //print contents of registers after execution of instruction
