@@ -221,13 +221,20 @@ void readInstructions(string file) {
 	}
 }
 
-
-
+/************************************************************************
+Function: execute
+Author: Jake Davidson
+Description: Loops throught the list of instructions, exectuing them 
+one by one. If there is a jump, it sets instructionRegister to the address
+of the jump if it is a valid jump. It also prints a trace line
+for each instruction, and the contents of the AC and 4 index registers
+after each instruction has finished executing. This runs in an infinite loop
+until it reaches an error, a halt instruction, or the end of the instructions
+************************************************************************/
 void execute() {
 	ExecuteInstruction ins; //container class for instructions and ALU operations
 	bool jump; //bool to keep track of whether or not we have jumped or not
-	//run instructions until we hit halt or 
-	//have an error
+	//run instructions until we hit halt or have an error
 	while (true) {
 		jump = false;
 		instruction i = *instructionRegister;
@@ -329,10 +336,18 @@ void execute() {
 	}
 }
 
-//get the address mode from a binary string (bits 5-2)
+/************************************************************************
+Function: getAddrMode
+Author: Jake Davidson
+Description: Extracts the addressing mode from a string of bits.
+It then matches those bits with an addressing mode enum. 
+Paramaters: s - string of bits to extract from
+Returns: a - enum of the addressing mode extracted
+************************************************************************/
 addrModes getAddrMode(string s) {
-	addrModes a;
-	string addressMode;
+	addrModes a; //addressing mode to return
+	string addressMode; //holds extracted bits
+	//iterator to a key, value in map, the map maps bits to an address mode enum
 	map<string, addrModes>::iterator it;
 	//extract address mode from bitstring
 	addressMode = s.substr(18, 4);
@@ -349,9 +364,17 @@ addrModes getAddrMode(string s) {
 	//return the address mode for the instruction
 	return a;
 }
-//gets the op code from a binary string (bits 11-6)
+
+/************************************************************************
+Function: getOpCode
+Author: Jake Davidson
+Description: Extracts the operation code from a string of bits. Then converts
+those bits into an enum of the op code for use later when executing instruction.
+Paramaters: s - string of bits to extract from
+Returns: op - enum of the operation code extracted
+************************************************************************/
 opCodes getOpCode(string s) {
-	opCodes op = UNDEFINED;
+	opCodes op = UNDEFINED; //op code to return, with default value of Undefined
 	//strings to hold the category bits and the specifier bits
 	string category = "", specifier = "";
 	//extract category bits
@@ -359,6 +382,9 @@ opCodes getOpCode(string s) {
 	//extract specifier bits
 	specifier = s.substr(14, 4);
 	//match bitstrings to opcode
+	//there are 4 categories, and bits within those
+	//categories determine the operation code
+	//String that are compared here are defined in const.h
 	if (category == MISC) {
 		if (specifier == S_HALT)
 			op = HALT;
@@ -418,11 +444,20 @@ opCodes getOpCode(string s) {
 
 	return op;
 }
-//get the two bit index register number
+
+/************************************************************************
+Function: getIndexRegister
+Author: Jake Davidson
+Description: Extracts the specified index register from the instruction.
+Returns 0-3, to specify the register
+Paramaters: s - string of bits to extract from
+Returns: indexRegister - register specified in the instruction
+************************************************************************/
 int getIndexRegister(string s) {
-	string registerString = "";
-	int indexRegister;
-	registerString = s.substr(22, 2);
+	string registerString = ""; //holds extracted string
+	int indexRegister; //number register to return
+	registerString = s.substr(22, 2); //extract the bits
+	//match the bits to an index register
 	if (registerString == R_0)
 		indexRegister = 0;
 	else if (registerString == R_1)
@@ -439,18 +474,37 @@ int getIndexRegister(string s) {
 	}
 	return indexRegister;
 }
-//get the address from the ADDR field (bits 23-12)
+
+/************************************************************************
+Function: getOperandAddress
+Author: Jake Davidson
+Description: Extracts the operand address from a string of bits. Returns
+the address as an unsigned integer.
+Paramaters: s - string of bits to extract from
+Returns: address - address in the address field
+************************************************************************/
 unsigned int getOperandAddress(string s) {
-	string addressString = "";
-	int address = 0;
-	addressString = s.substr(0, 12);
+	string addressString = ""; //holds the string of extracted bits
+	int address = 0; //address to return
+	addressString = s.substr(0, 12); //extract the bits
 	//convert to an int
 	address = stoi(addressString, nullptr, 2);
+	//return the address
 	return address;
 }
-//convert a string of hex to a string of binary for bit extraction
+
+/************************************************************************
+Function: convertToBin
+Author: Jake Davidson
+Description: Converts a string of hex to a string of binary. It does this
+by replacing each hex char with 4 binary bits.
+Paramaters: s - string to convert
+Returns: binString - string of converted binary
+************************************************************************/
 string convertToBin(string s) {
-	string binString = "";
+	string binString = ""; //holds binary string
+	//for each character in the hex string, replace with corresponding
+	//binary value
 	for (char c : s) {
 		switch (c) {
 		case '0':
@@ -509,7 +563,14 @@ string convertToBin(string s) {
 	return binString;
 }
 
-//split a string into tokens by whitespace and return in vector
+/************************************************************************
+Function: splitString
+Author: Jake Davidson
+Description: Splits a string into parts based on whitespace (tokenizer).
+I actually wrote this function for a previous project, but I wrote it.
+Paramaters: s - string to split
+Returns: words - vector of words in string
+************************************************************************/
 vector<string> splitString(string s) {
 	stringstream stream; //stream to use
 	vector<string> words; //container for strings
@@ -521,9 +582,17 @@ vector<string> splitString(string s) {
 	}
 	return words;
 }
-//pad a string with 0s on left, up to 24 (0-23)
+/************************************************************************
+Function: pad
+Author: Jake Davidson
+Description: Pads a binary instruction so that it has the correct number
+of bits for extraction.
+Paramaters: s - string to pad
+Returns: padString - the padded string
+************************************************************************/
 string pad(string s) {
 	string padString = s;
+	//add 0 until string is correct length
 	while (padString.length() < 24)
 		padString = "0" + padString;
 	return padString;
